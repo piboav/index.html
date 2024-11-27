@@ -1,0 +1,269 @@
+<!DOCTYPE html><html><head><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+
+        body {
+            background: #2c1810;
+            color: #e8d5b7;
+            font-family: 'MedievalSharp', cursive;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .inventory-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(44, 24, 16, 0.95);
+            border: 3px solid #8b4513;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        #inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .item {
+            background: linear-gradient(145deg, #3c2416 0%, #231209 100%);
+            border: 2px solid #8b4513;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .item-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 223, 0, 0.5);
+        }
+
+        .item-name {
+            color: #ffd700;
+            font-size: 1.2em;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .item-quantity {
+            color: #c0c0c0;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .item-price {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .controls {
+            background: rgba(59, 32, 21, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #8b4513;
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        select, input {
+            background: #231209;
+            border: 2px solid #8b4513;
+            color: #e8d5b7;
+            padding: 8px;
+            border-radius: 5px;
+            font-family: 'MedievalSharp', cursive;
+        }
+
+        button {
+            background: linear-gradient(145deg, #8b4513 0%, #6b3010 100%);
+            color: #e8d5b7;
+            border: 2px solid #d4af37;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-family: 'MedievalSharp', cursive;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        button:hover {
+            background: linear-gradient(145deg, #9b5523 0%, #7b4020 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .consume-container {
+            margin-top: 15px;
+        }
+
+        .consume-quantity {
+            width: 70px;
+            text-align: center;
+            margin-right: 8px;
+        }
+
+        .gold-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="inventory-container">
+        <div id="inventory-grid"></div>
+        
+        <div class="controls">
+            <select id="item-select">
+                <option value="bread">Pain</option>
+                <option value="meat">Viande</option>
+                <option value="healthpotion">Potion de soin</option>
+                <option value="staminapotion">Potion de stamina</option>
+                <option value="crossbow">Arbalète</option>
+            </select>
+            <input type="number" id="quantity" min="1" value="1">
+            <button onclick="addItem(true)">Acheter</button>
+            <button onclick="addItem(false)">Vendre</button>
+        </div>
+    </div>
+
+    <script>
+        const inventory = {
+            gold: { name: "Pièces d'or", icon: "💰", quantity: 1000, price: 0, consumable: false },
+            bread: { name: "Pain", icon: "🍞", quantity: 5, price: 3, consumable: true },
+            meat: { name: "Viande", icon: "🥩", quantity: 3, price: 5, consumable: true },
+            healthpotion: { name: "Potion de soin", icon: "🧪", quantity: 2, price: 7, consumable: true },
+            staminapotion: { name: "Potion de stamina", icon: "⚡", quantity: 2, price: 13, consumable: true },
+            crossbow: { name: "Arbalète", icon: "🏹", quantity: 1, price: 16, consumable: true }
+        };
+
+        function consumeItem(itemKey) {
+            const consumeQuantityInput = document.getElementById(`consume-quantity-${itemKey}`);
+            const consumeQuantity = parseInt(consumeQuantityInput.value) || 0;
+
+            if (consumeQuantity <= 0) {
+                alert("Veuillez entrer une quantité valide");
+                return;
+            }
+
+            if (consumeQuantity > inventory[itemKey].quantity) {
+                alert("Vous n'avez pas assez d'items à utiliser!");
+                return;
+            }
+
+            inventory[itemKey].quantity -= consumeQuantity;
+            alert(`Vous avez utilisé ${consumeQuantity} ${inventory[itemKey].name}`);
+            updateDisplay();
+        }
+
+        function modifyGold(amount) {
+            const quantityInput = document.getElementById(`consume-quantity-gold`);
+            const quantity = parseInt(quantityInput.value) || 0;
+            
+            if (quantity <= 0) {
+                alert("Veuillez entrer une quantité valide");
+                return;
+            }
+
+            const totalAmount = amount * quantity;
+            if (totalAmount < 0 && Math.abs(totalAmount) > inventory.gold.quantity) {
+                alert("Vous n'avez pas assez d'or!");
+                return;
+            }
+
+            inventory.gold.quantity += totalAmount;
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            const grid = document.getElementById('inventory-grid');
+            grid.innerHTML = '';
+
+            for (const [key, item] of Object.entries(inventory)) {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'item';
+                let consumeHtml = '';
+                
+                if (key === 'gold') {
+                    consumeHtml = `
+                        <div class="consume-container">
+                            <input type="number" class="consume-quantity" id="consume-quantity-${key}" min="1" value="1">
+                            <div class="gold-buttons">
+                                <button class="consume gold-add" onclick="modifyGold(1)">+</button>
+                                <button class="consume gold-remove" onclick="modifyGold(-1)">-</button>
+                            </div>
+                        </div>
+                    `;
+                } else if (item.consumable) {
+                    consumeHtml = `
+                        <div class="consume-container">
+                            <input type="number" class="consume-quantity" id="consume-quantity-${key}" min="1" max="${item.quantity}" value="1">
+                            <button class="consume" onclick="consumeItem('${key}')">Utiliser</button>
+                        </div>
+                    `;
+                }
+
+                itemElement.innerHTML = `
+                    <div class="item-icon">${item.icon}</div>
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-quantity">${item.quantity}</div>
+                    ${item.price > 0 ? `<div class="item-price">${item.price} 💰</div>` : ''}
+                    ${consumeHtml}
+                `;
+                grid.appendChild(itemElement);
+            }
+        }
+
+        function addItem(isAdding) {
+            const itemSelect = document.getElementById('item-select');
+            const quantityInput = document.getElementById('quantity');
+            const itemKey = itemSelect.value;
+            const quantity = parseInt(quantityInput.value) || 0;
+            const totalPrice = inventory[itemKey].price * quantity;
+
+            if (quantity <= 0) {
+                alert("Veuillez entrer une quantité valide");
+                return;
+            }
+
+            if (isAdding) {
+                if (inventory.gold.quantity < totalPrice) {
+                    alert("Vous n'avez pas assez d'or!");
+                    return;
+                }
+                inventory[itemKey].quantity += quantity;
+                inventory.gold.quantity -= totalPrice;
+            } else {
+                if (inventory[itemKey].quantity < quantity) {
+                    alert("Vous n'avez pas assez d'items à vendre!");
+                    return;
+                }
+                inventory[itemKey].quantity -= quantity;
+                inventory.gold.quantity += Math.floor(totalPrice * 0.5);
+            }
+
+            updateDisplay();
+            quantityInput.value = '1';
+        }
+
+        // Initialiser l'affichage au chargement
+        updateDisplay();
+    </script>
+
+
+</body></html>
